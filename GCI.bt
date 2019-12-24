@@ -1,0 +1,99 @@
+//------------------------------------------------
+//--- 010 Editor v9.0 Binary Template
+//
+//      File: Gamecube GCI save file
+//   Authors: jam1garner
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+typedef ubyte u8;
+typedef ushort u16;
+typedef uint u32;
+typedef ulong u64;
+
+BigEndian();
+
+enum <u8> BIFlags {
+    BANNER_NONE = 0,
+    BANNER_CI8,
+    BANNER_RGB5A3,
+    BANNER_11
+};
+
+enum <u16> IconFormat {
+    IconNone = 0,
+    CI8,
+    RGB5A3
+};
+
+enum <u16> AnimSpeed {
+    AnimNone    = 0,
+    Fast    = 1,
+    Medium  = 2,
+    Slow    = 3
+};
+
+string DisplayTime2000(time_t& time){
+    return Time64TToString((time64_t)((ulong)time + 946684800));
+};
+
+struct HEADER {
+    char game_code[3]<bgcolor=cGreen>;
+    char game_region[1]<bgcolor=cGray>;
+    char maker_code[2]<bgcolor=cBlue>;
+    byte unk;
+    BIFlags : 6;
+    BIFlags banner_image_type : 2<bgcolor=cYellow>;
+    char filename[0x20]<bgcolor=cRed>;
+    time_t mod_time<bgcolor=cBlack, comment=DisplayTime2000>;
+    u32 image_offset<bgcolor=cWhite>;
+    IconFormat icon_format<bgcolor=cAqua>;
+    AnimSpeed anim_speed;
+    u8 permission_flags<bgcolor=cLtPurple>;
+    u8 copy_counter<bgcolor=cLtGreen>;
+    u16 first_block<bgcolor=cLtBlue>;
+    u16 block_count<bgcolor=cLtYellow>;
+    u16 unk2;
+    u16 info_offset<bgcolor=cPurple>;
+    u16 name_offset<bgcolor=cLtRed>;
+} header;
+
+byte data[0x2000 * header.block_count]<bgcolor=cLtGray>;
+
+struct Banner_CI8 {
+    byte data[0x2000];
+};
+
+struct Banner_RGB5A3 {
+    byte data[6144];
+};
+
+if(header.image_offset) {
+    FSeek(header.image_offset);
+    if(header.anim_speed != AnimNone) {
+        if(header.banner_image_type == BANNER_CI8) {
+            Banner_CI8 banner_frames[8]<bgcolor=cBlue>;
+        } else {
+            Banner_RGB5A3 banner_frames[8]<bgcolor=cBlue>;
+        }
+    } else {
+        if(header.banner_image_type == BANNER_CI8) {
+            Banner_CI8 banner<bgcolor=cBlue>;
+        } else {
+            Banner_RGB5A3 banner<bgcolor=cBlue>;
+        }
+    }
+}
+
+if(header.name_offset){
+    FSeek(sizeof(HEADER) + header.info_offset + header.name_offset);
+    struct Info {
+        char game_name[0x20]<bgcolor=cGreen>;
+        char last_saved[0x20]<bgcolor=cYellow>;
+    } info;
+}
